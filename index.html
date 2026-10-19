@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>策略性备料申请表 - 蓝凌MK BPM 表单原型 V0.4</title>
+<title>策略性备料申请表 - 蓝凌MK BPM 表单原型 V1.0（发起人表单）</title>
 <style>
   :root{
     --mk-blue:#1f6fd0; --mk-blue-dark:#185aaf; --mk-bg:#eef1f6;
@@ -68,6 +68,8 @@
   table.detail td.calc{background:var(--ro-bg);color:var(--text-sub);}
   table.detail td.ebs{background:#f2f8f2;color:#4a7a54;}
   .th-note{display:block;font-weight:400;font-size:10px;color:var(--text-sub);}
+  /* 【V0.9】未税单价、币种两列：保留字段但默认隐藏（不删除）。如需启用，删除本行规则即可，无需改表结构。 */
+  table.detail th.hide-col,table.detail td.hide-col{display:none;}
   .row-del{color:var(--req);cursor:pointer;font-size:14px;padding:0 4px;}
   .tbl-foot{padding:0 16px 12px;font-size:12px;color:var(--text-sub);display:flex;gap:20px;}
   .tbl-foot b{color:var(--text);font-weight:600;}
@@ -111,7 +113,12 @@
   .btn.warn{color:var(--req);border-color:#f0b9b9;}
   /* 图例 */
   .legend{display:flex;gap:16px;align-items:center;font-size:11.5px;color:var(--text-sub);padding:8px 2px 0;}
-  .legend .tag{margin:0;}
+
+.req-star{color:var(--req);font-weight:700;margin-right:2px}
+.fi>label{width:156px}
+.prototype-note{padding:8px 16px;color:var(--text-sub);font-size:12px;line-height:1.7}
+.upl-inline{border:1px dashed var(--line);border-radius:4px;padding:5px 12px;display:inline-flex;align-items:center;gap:8px;color:var(--text-sub);background:#fafbfd;cursor:pointer;font-size:12px}
+.upl-inline .plus{width:20px;height:20px;border:1px solid var(--line);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--mk-blue);background:#fff}
 </style>
 </head>
 <body>
@@ -119,14 +126,14 @@
 <!-- 顶部栏 -->
 <div class="topbar">
   <div class="title">策略性备料申请表<span class="docno">流程编号：BL-20261009-0001（自动生成）</span></div>
-  <div class="meta">当前节点：申请人提交 &nbsp;|&nbsp; 紧急程度：普通</div>
+  <div class="meta">发起人填写视角（示例进度：物料计划科待办）  |  紧急程度：普通</div>
 </div>
 
 <div class="layout">
   <!-- ===================== 左侧表单 ===================== -->
   <div class="form-col">
 
-    <!-- 基本信息 -->
+    <div class="prototype-note">交互原型：客户与OU联动使用本页示例数据；EBS回写、价格及公式计算、上传导入、暂存与正式提交需接入业务系统。红色 * 表示当前条件下必填。客户备料场景下，风险等级与风险应对方案<b>不在本表单填写</b>——分别由《风险核定页（物料计划科节点）》《风险应对方案页（销售总监节点）》两个独立节点表单完成（见配套原型）。</div><!-- 基本信息 -->
     <div class="card">
       <div class="card-hd"><span class="bar"></span><h3>基本信息</h3><span class="hint">申请人 / 部门 / 编号 / 时间由系统带出，不可编辑</span></div>
       <div class="card-bd">
@@ -134,11 +141,11 @@
           <div class="fi"><label>申请人</label><div class="ctl"><input class="ipt ro" value="张三" readonly></div></div>
           <div class="fi"><label>申请部门</label><div class="ctl"><input class="ipt ro" value="销售一部" readonly></div></div>
           <div class="fi"><label>提交时间</label><div class="ctl"><input class="ipt ro" value="2026-10-09 10:04" readonly></div></div>
-          <div class="fi no-line"><label>流程编号</label><div class="ctl"><input class="ipt ro" value="BL-20261009-0001" readonly></div></div>
+          <div class="fi no-line"><label>流程编号</label><div class="ctl"><input class="ipt ro" value="" placeholder="提交后由系统自动生成" readonly></div></div>
         </div>
-        <div class="fi"><label>流程标题<span class="req-star">*</span></label><div class="ctl">
-          <input class="ipt ro" value="华南区域+133深圳坪山厂+XX电子科技有限公司+客户备料+零散备料" readonly>
-          <span class="tag tag-blue">用户填写完《策略性备料申请表》后自动合成：销售区域+OU组织名称+客户全称+来源类型+备料类型；某字段无值则取空值</span>
+        <div class="fi"><label>流程主题</label><div class="ctl">
+          <input class="ipt ro" value="张三创建的客户策提流程" readonly id="flowTitle">
+          <span class="tag tag-blue">系统合成：{申请人}创建的{策备类型}流程 · 例：张三创建的客户策提流程</span>
         </div></div>
         <div class="fi no-line"><label>备注</label><div class="ctl"><textarea class="txt" rows="2" placeholder="请输入备注（选填）"></textarea></div></div>
       </div>
@@ -146,62 +153,62 @@
 
     <!-- 待评审信息 -->
     <div class="card">
-      <div class="card-hd"><span class="bar"></span><h3>待评审信息</h3><span class="hint">备料类型 + 需求类型为联动主控字段，决定其余字段显隐与必填</span></div>
+      <div class="card-hd"><span class="bar"></span><h3>待评审信息</h3><span class="hint">来源类型 + 备料类型 + 需求类型为联动主控字段</span></div>
       <div class="card-bd">
         <div class="grid">
           <div class="fi"><label><span class="req-star">*</span>来源类型</label><div class="ctl">
             <div class="radio-g">
-              <label><input type="radio" name="source" checked>客户备料</label>
-              <label><input type="radio" name="source">供应链备料</label>
+              <label><input type="radio" name="source" checked value="客户备料" onchange="syncFields()" required="required">客户备料</label>
+              <label><input type="radio" name="source" value="供应链备料" onchange="syncFields()" required="required">供应链备料</label>
             </div></div></div>
           <div class="fi"><label><span class="req-star">*</span>备料类型</label><div class="ctl">
             <div class="radio-g">
-              <label><input type="radio" name="mattype" value="bom" onchange="syncFields()">BOM备料</label>
-              <label><input type="radio" name="mattype" value="scatter" checked onchange="syncFields()">零散备料</label>
+              <label><input type="radio" name="mattype" value="bom" onchange="syncFields()" required="required">BOM备料</label>
+              <label><input type="radio" name="mattype" value="scatter" checked onchange="syncFields()" required="required">零散备料</label>
             </div></div></div>
           <div class="fi"><label><span class="req-star">*</span>需求类型</label><div class="ctl">
-            <select class="sel" id="demandType" onchange="syncFields()"><option>直接请购</option><option>一般预测</option><option>滚动预测</option></select></div></div>
+            <select class="sel" id="demandType" onchange="syncFields()" required="required"><option>直接请购</option><option>一般预测</option><option>滚动预测</option></select></div></div>
 
           <div class="fi"><label><span class="req-star">*</span>OU组织名称</label><div class="ctl">
-            <select class="sel"><option>101 深圳坪山厂</option><option>102</option><option>133</option><option>702</option></select></div></div>
-          <div class="fi"><label>OU组织编码</label><div class="ctl"><input class="ipt ro" value="133" readonly><span class="tag tag-blue">随组织名称联动</span></div></div>
-          <div class="fi hidden" id="fldForecast"><label><span class="req-star" id="forecastStar">*</span>预测集</label><div class="ctl">
-            <input class="ipt" value="SG_BUY"><span class="tag tag-orange">仅「零散备料+滚动预测」显示且必选 · 可筛选可手填</span></div></div>
+            <select class="sel" id="ouName" required="required"><option>133 深圳坪山厂</option><option>102</option><option>133</option><option>702</option></select></div></div>
+          <div class="fi"><label>OU组织编码</label><div class="ctl"><input class="ipt ro" value="133" readonly id="ouCode"><span class="tag tag-blue">随组织名称联动</span></div></div>
+          <div class="fi hidden" id="fldForecast"><label><span class="req-star">*</span>预测集</label><div class="ctl">
+            <input class="ipt" value="SG_BUY" required="required"><span class="tag tag-orange">仅“零散备料+滚动预测”显示且必选 · 可筛选可手填</span></div></div>
 
-          <div class="fi" style="grid-column:span 2"><label><span class="req-star">*</span>客户全称</label><div class="ctl">
-            <input class="ipt" value="XX电子科技有限公司" list="custlist" placeholder="输入客户全称关键字后选中" style="padding-right:26px">
-            <datalist id="custlist"><option value="XX电子科技有限公司"><option value="YY通信设备有限公司"><option value="ZZ智能终端有限公司"></datalist>
-            <span class="tag tag-green">客户备料必填 / 供应链备料选填（字段保留显示，不隐藏）</span>
+          <div class="fi" style="grid-column:span 2"><label>客户全称</label><div class="ctl">
+            <input class="ipt" value="XX电子科技有限公司" list="custlist" placeholder="输入客户全称关键字后选中（选填）" style="padding-right:26px" id="customerName">
+            <datalist id="custlist"><option value="XX电子科技有限公司"></option><option value="YY通信设备有限公司"></option><option value="ZZ智能终端有限公司"></option></datalist>
             <span class="tag tag-blue">关键字检索后选中，自动带出客户编码·销售区域·销售经理</span>
           </div></div>
-          <div class="fi"><label><span class="req-star">*</span>客户编码</label><div class="ctl">
-            <input class="ipt ro" value="C0001" readonly><span class="tag tag-blue">随客户全称自动带出</span></div></div>
+          <div class="fi"><label>客户编码</label><div class="ctl">
+            <input class="ipt ro" value="C0001" readonly id="customerCode"><span class="tag tag-blue">随客户全称自动带出</span></div></div>
 
-          <div class="fi"><label><span class="req-star">*</span>销售区域</label><div class="ctl">
-            <select class="sel"><option>华南区域</option><option>华东区域</option></select><span class="tag tag-blue">随客户带出，可改</span></div></div>
-          <div class="fi"><label><span class="req-star">*</span>销售经理</label><div class="ctl">
-            <input class="ipt" value="张三"><span class="tag tag-green">客户备料必填 / 供应链备料选填（不隐藏）</span></div></div>
-          <div class="fi"><label>销售订单</label><div class="ctl"><input class="ipt" placeholder="请输入销售订单号"></div></div>
+          <div class="fi"><label>销售区域</label><div class="ctl">
+            <select class="sel" id="salesRegion"><option>华南区域</option><option>华东区域</option></select><span class="tag tag-blue">随客户带出，可改</span></div></div>
+          <div class="fi"><label>销售经理</label><div class="ctl">
+            <input class="ipt" value="张三" id="salesManager"><span class="tag tag-blue">随客户带出，可改</span></div></div>
+          <div class="fi"><label>销售订单</label><div class="ctl"><input class="ipt" placeholder="请输入销售订单号（选填）"></div></div>
 
-          <div class="fi"><label>是否有备料协议</label><div class="ctl"><select class="sel" style="width:90px"><option>是</option><option>否</option></select></div></div>
-          <div class="fi"><label>是否为主功能芯片备料</label><div class="ctl"><select class="sel" style="width:90px"><option>否</option><option>是</option></select></div></div>
-          <div class="fi hidden" id="fldTransit"><label>是否在途冲减</label><div class="ctl">
-            <select class="sel" style="width:90px"><option>是</option><option>否</option></select><span class="tag tag-orange">仅BOM备料显示</span></div></div>
+          <!-- 【本次新增】4个布尔字段：位于销售区域/销售经理的下一行 -->
+          <div class="fi"><label><span class="req-star">*</span>是否为新客户</label><div class="ctl"><select class="sel" style="width:90px" required="required"><option>否</option><option>是</option></select><span class="tag tag-blue">布尔 · 必填</span></div></div>
+          <div class="fi"><label><span class="req-star">*</span>是否为新产品</label><div class="ctl"><select class="sel" style="width:90px" required="required"><option>否</option><option>是</option></select><span class="tag tag-blue">布尔 · 必填</span></div></div>
+          <div class="fi"><label><span class="req-star">*</span>是否为首样</label><div class="ctl"><select class="sel" style="width:90px" required="required"><option>否</option><option>是</option></select><span class="tag tag-blue">布尔 · 必填</span></div></div>
+          <div class="fi hidden" id="fldTR5"><label><span class="req-star">*</span>是否已过TR5</label><div class="ctl"><select class="sel" style="width:90px" required="required"><option>否</option><option>是</option></select><span class="tag tag-orange">仅“备料类型=BOM备料”时显示且必填 · 布尔</span></div></div>
 
-          <div class="fi"><label>备料范围</label><div class="ctl"><input class="ipt" placeholder="请输入备料范围"></div></div>
-          <div class="fi no-line"><label>是否承担呆滞</label><div class="ctl"><select class="sel" style="width:90px"><option>否</option><option>是</option></select></div></div>
-          <div class="fi no-line"><label>&nbsp;</label><div class="ctl"></div></div>
+          <div class="fi"><label><span class="req-star">*</span>是否有备料协议</label><div class="ctl"><select class="sel" style="width:90px" required="required"><option>是</option><option>否</option></select></div></div>
+          <div class="fi"><label><span class="req-star">*</span>是否为主功能芯片备料</label><div class="ctl"><select class="sel" style="width:90px" required="required"><option>否</option><option>是</option></select></div></div>
+          <div class="fi hidden" id="fldTransit"><label><span class="req-star">*</span>是否在途冲减</label><div class="ctl">
+            <input class="ipt ro" value="Y" readonly placeholder="EBS带出：Y / N"><span class="tag tag-green">仅BOM备料显示且必填 · 取EBS，按EBS显示Y/N，不可人工填写或选择</span></div></div>
+
+          <div class="fi" id="fldScope"><label><span class="req-star">*</span>备料范围</label><div class="ctl"><input class="ipt" placeholder="请输入备料范围" required="required"><span class="tag tag-orange">仅“来源类型=客户备料”时显示且必填</span></div></div>
+          <div class="fi no-line"><label><span class="req-star">*</span>是否承担呆滞</label><div class="ctl"><select class="sel" style="width:90px" required="required"><option>否</option><option>是</option></select></div></div>
+          <div class="fi no-line"><label> </label><div class="ctl"></div></div>
         </div>
 
-        <div class="fi" id="fldPR"><label>PR编号</label><div class="ctl"><input class="ipt ro" value="" placeholder="审核后反写" readonly><span class="tag tag-orange">仅「零散备料+直接请购」显示 · EBS反写</span></div></div>
+        <div class="fi" id="fldPR"><label>PR编号</label><div class="ctl"><input class="ipt ro" value="" placeholder="审核后反写" readonly><span class="tag tag-orange">仅“零散备料+直接请购”显示 · EBS反写</span></div></div>
 
-        <div class="fi"><label><span class="req-star">*</span>风险等级</label><div class="ctl">
-          <div class="radio-g">
-            <label><input type="radio" name="risk">低风险</label>
-            <label><input type="radio" name="risk" checked>一般风险</label>
-            <label><input type="radio" name="risk">重大风险</label>
-          </div></div></div>
-        <div class="fi"><label>风险应对方案</label><div class="ctl"><textarea class="txt" rows="2" placeholder="重大风险时建议必填（待确认）"></textarea></div></div>
+        <!-- 【V0.8调整】风险等级、风险应对方案已移出发起人表单：不在发起人节点填写，
+             分别由《风险核定页（物料计划科节点）》《风险应对方案页（销售总监节点）》独立节点表单完成。 -->
         <div class="fi no-line"><label>其他备注</label><div class="ctl"><textarea class="txt" rows="2"></textarea></div></div>
       </div>
     </div>
@@ -211,129 +218,149 @@
       <div class="card-hd"><span class="bar"></span><h3>附件</h3><span class="hint">备料通知邮件 / 中标书 / 合同等</span></div>
       <div class="card-bd">
         <div class="upl"><span class="plus">＋</span>点击或拖拽上传附件，支持多文件</div>
-        <div class="file-item">📄 备料通知邮件-XX电子-20261009.pdf &nbsp;<span style="color:var(--text-sub)">1.2MB</span> &nbsp;✕</div>
+        <div class="file-item">📄 备料通知邮件-XX电子-20261009.pdf  <span style="color:var(--text-sub)">1.2MB</span>  ✕</div>
       </div>
     </div>
 
     <!-- 拟备物料明细 -->
     <div class="card">
-      <div class="card-hd"><span class="bar"></span><h3>拟备物料明细</h3><span class="hint">支持附件批量导入行数据</span></div>
+      <div class="card-hd"><span class="bar"></span><h3>拟备物料明细</h3><span class="hint">字段随备料类型切换：BOM备料 / 零散备料 两套互斥方案</span></div>
       <div class="tbl-tools">
-        <button class="btn-s primary">＋ 添加行</button>
+        <button class="btn-s primary" onclick="addRow()">＋ 添加行</button>
         <button class="btn-s">⬆ 批量导入（Excel/附件）</button>
-        <button class="btn-s">模板下载</button>
-        <button class="btn-s">删除选中行</button>
+        <button class="btn-s" onclick="downloadTemplate()">模板下载（Excel · 两个工作表）</button>
+        <button class="btn-s" onclick="delLastRow()">删除末行</button>
       </div>
-      <div class="tbl-wrap">
+      <div id="viewBom" class="tbl-wrap hidden">
         <table class="detail">
           <thead><tr>
             <th>序号</th>
-            <th>BOM号<span class="req-star">*</span><span class="th-note">BOM备料必填/零散选填</span></th>
-            <th>禁备物料(/分割)<span class="th-note">BOM备料选填</span></th>
-            <th>禁备LT<span class="th-note">BOM备料选填</span></th>
-            <th>物料编码<span class="th-note">BOM备料不填，零散备料必填</span></th>
-            <th>替代料<span class="th-note">零散选填</span></th>
-            <th>单用量<span class="req-star">*<span class="th-note">零散必填</span></span></th>
-            <th>是否购买现货<span class="req-star">*<span class="th-note">直接请购必填，其余选填</span></span></th>
-            <th>是否按MPQ<span class="req-star">*<span class="th-note">零散必填 · 选「是」时取EBS</span></span></th>
-            <th>MPQ<span class="th-note">按MPQ=是时取EBS</span></th>
+            <th><span class="req-star">*</span>BOM号<span class="th-note">必填</span></th>
+            <th>禁备物料(/分割)<span class="th-note">选填</span></th>
+            <th>禁备LT<span class="th-note">选填</span></th>
+            <th><span class="req-star">*</span>公司型号</th>
+            <th><span class="req-star">*</span>客户型号</th>
+            <th><span class="req-star">*</span>客户料号</th>
+            <th><span class="req-star">*</span>需求数量</th>
+            <th><span class="req-star">*</span>需求日期</th>
+            <th class="hide-col">未税单价<span class="th-note">已隐藏</span></th>
+            <th class="hide-col">币种<span class="th-note">已隐藏</span></th>
+            <th>备料金额（RMB）<span class="th-note">联动带出</span></th>
+            <th>备注<span class="th-note">选填</span></th>
+            <th>操作</th>
+          </tr></thead>
+          <tbody id="tbodyBom">
+            <tr>
+              <td class="calc" style="text-align:center">1</td>
+              <td><input class="ipt" value="BOM-2026-0451" required="required"></td>
+              <td><input class="ipt" value="CAP-0102/RES-0331"></td>
+              <td><input class="ipt" value="45"></td>
+              <td><input class="ipt" value="GS-47UF-25V" required="required"></td>
+              <td><input class="ipt" value="CU-47UF-A1" required="required"></td>
+              <td><input class="ipt" value="CL-10086" required="required"></td>
+              <td><input class="ipt" value="5000" required="required"></td>
+              <td><input class="ipt" value="2026-11-05" required="required"></td>
+              <td class="hide-col ebs"><input class="ipt ro" value="0.2350" readonly></td>
+              <td class="hide-col ebs"><input class="ipt ro" value="CNY" readonly></td>
+              <td class="ebs"><input class="ipt ro" value="1175.00" readonly></td>
+              <td><input class="ipt" value=""></td>
+              <td style="text-align:center"><span class="row-del" onclick="delRow(this)">🗑</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="viewScatter" class="tbl-wrap">
+        <table class="detail">
+          <thead><tr>
+            <th>序号</th>
+            <th>BOM号<span class="th-note">选填</span></th>
+            <th><span class="req-star">*</span>物料编码<span class="th-note">必填</span></th>
+            <th>替代料<span class="th-note">选填</span></th>
+            <th><span class="req-star">*</span>单用量</th>
+            <th id="spotHeader"><span class="req-star">*</span>是否购买现货<span class="th-note">直接请购必填</span></th>
+            <th>是否按MPQ<span class="th-note">取EBS，显示Y/N</span></th>
+            <th>MPQ<span class="th-note">取EBS；0/空/未维护→1</span></th>
             <th>物料名称<span class="th-note">取EBS</span></th>
             <th>物料规格型号<span class="th-note">取EBS</span></th>
-            <th>芯片方案<span class="th-note">主功能芯片备料必填</span></th>
-            <th>公司型号<span class="req-star">*</span></th>
-            <th>客户型号<span class="req-star">*</span></th>
-            <th>客户料号<span class="req-star">*</span></th>
-            <th>需求数量<span class="req-star">*</span></th>
-            <th>需求日期<span class="req-star">*</span></th>
-            <th>未税单价<span class="th-note">取EBS</span></th>
-            <th>币种<span class="th-note">取EBS</span></th>
-            <th>备料金额<span class="th-note">系统算</span></th>
+            <th><span class="req-star">*</span>芯片方案</th>
+            <th><span class="req-star">*</span>公司型号</th>
+            <th><span class="req-star">*</span>客户型号</th>
+            <th><span class="req-star">*</span>需求数量</th>
+            <th><span class="req-star">*</span>需求日期</th>
+            <th class="hide-col">未税单价<span class="th-note">已隐藏</span></th>
+            <th class="hide-col">币种<span class="th-note">已隐藏</span></th>
+            <th>备料金额（RMB）<span class="th-note">公式</span></th>
             <th>按MPQ备料数量<span class="th-note">公式</span></th>
             <th>按MPQ差异<span class="th-note">公式</span></th>
             <th>按MPQ差异金额<span class="th-note">公式</span></th>
             <th>物料状态<span class="th-note">取EBS</span></th>
-            <th>备注</th>
+            <th>备注<span class="th-note">选填</span></th>
             <th>操作</th>
           </tr></thead>
-          <tbody>
+          <tbody id="tbodyScatter">
             <tr>
               <td class="calc" style="text-align:center">1</td>
               <td><input class="ipt" value="BOM-2026-0451"></td>
-              <td><input class="ipt" value="CAP-0102/RES-0331"></td>
-              <td><input class="ipt" value="45"></td>
-              <td class="ebs"><input class="ipt ro" value="2040476000241205" readonly></td>
+              <td class="ebs"><input class="ipt" value="2040476000241205" required="required" placeholder="选择或录入物料编码（演示）"></td>
               <td><input class="ipt" value=""></td>
-              <td><input class="ipt" value="1"></td>
-              <td style="text-align:center"><select class="ipt" style="width:56px;padding:0 2px"><option>否</option><option>是</option></select></td>
-              <td style="text-align:center"><select class="ipt" style="width:56px;padding:0 2px"><option>是</option><option>否</option></select></td>
+              <td><input class="ipt" value="1" required="required"></td>
+              <td style="text-align:center"><select class="ipt" style="width:56px;padding:0 2px" required="required"><option>否</option><option>是</option></select></td>
+              <td style="text-align:center"><input class="ipt ro" style="width:56px;padding:0 2px;text-align:center" value="Y" readonly></td>
               <td class="ebs"><input class="ipt ro" value="3000" readonly></td>
               <td class="ebs"><input class="ipt ro" value="贴片电容 47uF" readonly></td>
               <td class="ebs"><input class="ipt ro" value="AL-EL,47uF,M,25V" readonly></td>
-              <td><input class="ipt" value=""></td>
-              <td><input class="ipt" value="GS-47UF-25V"></td>
-              <td><input class="ipt" value="CU-47UF-A1"></td>
-              <td><input class="ipt" value="CL-10086"></td>
-              <td><input class="ipt" value="5000"></td>
-              <td><input class="ipt" value="2026-11-05"></td>
-              <td class="ebs"><input class="ipt ro" value="0.235" readonly></td>
-              <td class="ebs"><input class="ipt ro" value="USD" readonly></td>
+              <td><input class="ipt" value="" required="required"></td>
+              <td><input class="ipt" value="GS-47UF-25V" required="required"></td>
+              <td><input class="ipt" value="CU-47UF-A1" required="required"></td>
+              <td><input class="ipt" value="5000" required="required"></td>
+              <td><input class="ipt" value="2026-11-05" required="required"></td>
+              <td class="hide-col ebs"><input class="ipt ro" value="0.2350" readonly></td>
+              <td class="hide-col ebs"><input class="ipt ro" value="CNY" readonly></td>
               <td class="calc"><input class="ipt ro" value="1175.00" readonly></td>
               <td class="calc"><input class="ipt ro" value="6000" readonly></td>
               <td class="calc"><input class="ipt ro" value="1000" readonly></td>
               <td class="calc"><input class="ipt ro" value="235.00" readonly></td>
               <td class="ebs"><input class="ipt ro" value="有效" readonly></td>
               <td><input class="ipt" value=""></td>
-              <td style="text-align:center"><span class="row-del">🗑</span></td>
+              <td style="text-align:center"><span class="row-del" onclick="delRow(this)">🗑</span></td>
             </tr>
             <tr>
               <td class="calc" style="text-align:center">2</td>
               <td><input class="ipt" value="BOM-2026-0451"></td>
-              <td><input class="ipt" value=""></td>
-              <td><input class="ipt" value=""></td>
-              <td class="ebs"><input class="ipt ro" value="2040476000241308" readonly></td>
+              <td class="ebs"><input class="ipt" value="2040476000241308" required="required" placeholder="选择或录入物料编码（演示）"></td>
               <td><input class="ipt" value="2040476000241501"></td>
-              <td><input class="ipt" value="2"></td>
-              <td style="text-align:center"><select class="ipt" style="width:56px;padding:0 2px"><option>否</option><option>是</option></select></td>
-              <td style="text-align:center"><select class="ipt" style="width:56px;padding:0 2px"><option>是</option><option>否</option></select></td>
-              <td class="calc"><input class="ipt ro" value="—" readonly></td>
+              <td><input class="ipt" value="2" required="required"></td>
+              <td style="text-align:center"><select class="ipt" style="width:56px;padding:0 2px" required="required"><option>否</option><option>是</option></select></td>
+              <td style="text-align:center"><input class="ipt ro" style="width:56px;padding:0 2px;text-align:center" value="N" readonly></td>
+              <td class="ebs"><input class="ipt ro" value="1" readonly></td>
               <td class="ebs"><input class="ipt ro" value="贴片电阻 10K" readonly></td>
               <td class="ebs"><input class="ipt ro" value="AL-EL,10K,1%,0603" readonly></td>
-              <td><input class="ipt" value=""></td>
-              <td><input class="ipt" value="GS-10K-0603"></td>
-              <td><input class="ipt" value="CU-10K-B2"></td>
-              <td><input class="ipt" value="CL-10087"></td>
-              <td><input class="ipt" value="12000"></td>
-              <td><input class="ipt" value="2026-11-15"></td>
-              <td class="ebs"><input class="ipt ro" value="0.008" readonly></td>
-              <td class="ebs"><input class="ipt ro" value="USD" readonly></td>
+              <td><input class="ipt" value="" required="required"></td>
+              <td><input class="ipt" value="GS-10K-0603" required="required"></td>
+              <td><input class="ipt" value="CU-10K-B2" required="required"></td>
+              <td><input class="ipt" value="12000" required="required"></td>
+              <td><input class="ipt" value="2026-11-15" required="required"></td>
+              <td class="hide-col ebs"><input class="ipt ro" value="0.0080" readonly></td>
+              <td class="hide-col ebs"><input class="ipt ro" value="CNY" readonly></td>
               <td class="calc"><input class="ipt ro" value="96.00" readonly></td>
-              <td class="calc"><input class="ipt ro" value="—" readonly></td>
-              <td class="calc"><input class="ipt ro" value="—" readonly></td>
-              <td class="calc"><input class="ipt ro" value="—" readonly></td>
+              <td class="calc"><input class="ipt ro" value="24000" readonly></td>
+              <td class="calc"><input class="ipt ro" value="0" readonly></td>
+              <td class="calc"><input class="ipt ro" value="0.00" readonly></td>
               <td class="ebs"><input class="ipt ro" value="有效" readonly></td>
               <td><input class="ipt" value=""></td>
-              <td style="text-align:center"><span class="row-del">🗑</span></td>
+              <td style="text-align:center"><span class="row-del" onclick="delRow(this)">🗑</span></td>
             </tr>
           </tbody>
         </table>
       </div>
       <div class="tbl-foot">
-        <span>合计备料金额：<b>¥ 1,271.00</b>（未税，按行币种汇率折算——待确认）</span>
-        <span>共 <b>2</b> 行</span>
+        <span>示例合计备料金额（RMB）：<b id="sumAmt">¥ 1,271.00</b></span>
+        <span>当前视图：<b id="viewName">零散备料</b> · 共 <b id="rowCnt">2</b> 行</span>
       </div>
     </div>
 
     <!-- 平台计划部门评审 -->
-    <div class="card">
-      <div class="card-hd"><span class="bar"></span><h3>平台计划部门评审</h3><span class="hint">评审节点填写区，申请人节点只读</span></div>
-      <div class="card-bd">
-        <div class="fi"><label><span class="req-star">*</span>评审意见</label><div class="ctl"><textarea class="txt ro" rows="2" placeholder="评审节点必填" readonly></textarea></div></div>
-        <div class="fi"><label>备注</label><div class="ctl"><textarea class="txt ro" rows="2" readonly></textarea></div></div>
-        <div class="fi no-line"><label>评审附件</label><div class="ctl">
-          <div class="upl" style="opacity:.6"><span class="plus">＋</span>评审节点可上传</div></div></div>
-      </div>
-    </div>
-
     <div class="legend">
       <b style="color:var(--label)">字段标注图例：</b>
       <span class="tag tag-blue">蓝色=自动联动/系统计算</span>
@@ -342,42 +369,59 @@
       <span style="color:var(--req)">*</span> 必填
       <span style="display:inline-block;width:12px;height:12px;background:var(--ro-bg);border:1px solid var(--line-light);border-radius:2px;vertical-align:-2px;margin-left:8px"></span> 只读/带出
       <span style="display:inline-block;width:12px;height:12px;background:#f2f8f2;border:1px solid #d8ecd9;border-radius:2px;vertical-align:-2px;margin-left:8px"></span> 取EBS字段
-      <span style="margin-left:10px">布尔字段统一用「是 / 否」，不再使用 Y / N</span>
+      <span style="margin-left:10px">布尔字段统一用“是 / 否”，不再使用 Y / N</span>
     </div>
     <div class="card" style="margin-top:12px">
       <div class="card-hd"><span class="bar"></span><h3>联动规则清单</h3></div>
       <div class="card-bd" style="font-size:12.5px;line-height:2;color:var(--label)">
-        <div>① 预测集：需同时满足「备料类型=零散备料」+「需求类型=滚动预测」才显示，且为必选；其余组合隐藏。</div>
-        <div>② PR编号：需同时满足「备料类型=零散备料」+「需求类型=直接请购」才显示，值由流程审核后 EBS 反写；其余组合隐藏。</div>
-        <div>③ 是否在途冲减：「备料类型=BOM备料」时显示（选「是/否」）；「备料类型=零散备料」时隐藏。</div>
-        <div>④ 明细表「是否按MPQ」=「是」时，MPQ 列方从 EBS 取值；选择「否」时 MPQ 列置空不可取数。</div>
-        <div>⑤ 客户全称：输入关键字检索并选中客户后，自动带出「客户编码 · 销售区域 · 销售经理」（销售区域允许手工调整）。</div>
-        <div>⑥ 明细表「是否购买现货」：需求类型=「直接请购」时为必填；需求类型为一般预测/滚动预测时为选填。</div>
-        <div>⑦ 流程标题：提交后由系统合成「销售区域+OU组织名称+客户全称+来源类型+备料类型」，其中某字段为空则该项取空值。</div>
+        <div>① 预测集：需同时满足“备料类型=零散备料”+“需求类型=滚动预测”才显示，且为必选；其余组合隐藏。</div>
+        <div>② PR编号：需同时满足“备料类型=零散备料”+“需求类型=直接请购”才显示，值由流程审核后 EBS 反写；其余组合隐藏。</div>
+        <div>③ 是否在途冲减：仅“备料类型=BOM备料”时显示且<b>必填</b>；取值来自 EBS，按 EBS 显示“Y / N”，<b>字段只读，不可人工填写或选择</b>；“零散备料”时隐藏。</div>
+        <div>④ 明细表“是否按MPQ”：<b>取自 EBS，按 EBS 显示“Y / N”，字段只读，不可人工选择</b>；=Y 时 MPQ 列方从 EBS 取值，=N 时 MPQ 列置空不可取数。<b>若 EBS 的 MPQ 为 0、空值或未维护，取数后系统统一自动调整为 1。</b></div>
+        <div>⑤ 客户全称：输入关键字检索并选中客户后，自动带出“客户编码·销售区域·销售经理”（销售区域允许手工调整）。客户全称 / 客户编码 / 销售区域 / 销售经理 / 销售订单 均为选填。</div>
+        <div>⑥ 明细表“是否购买现货”：需求类型=“直接请购”时为必填；需求类型为一般预测/滚动预测时为选填。</div>
+        <div>⑦ 流程主题：由系统合成“{申请人}创建的{策备类型}流程”，例：张三创建的客户策提流程；策备类型随来源类型取“客户策提 / 供应链策提”。</div>
+        <div>⑧ 拟备物料明细：字段集合随“备料类型”整体切换——“BOM备料”显示 10 个数据字段方案，“零散备料”显示 20 个数据字段方案（均另含序号与操作列），两套互斥不并存。</div>
+        <div>⑨ 布尔字段：是否为新客户 / 是否为新产品 / 是否为首样 为必填；<b>是否已过TR5 仅在“备料类型=BOM备料”时显示且必填，“零散备料”时隐藏</b>；人工选择字段统一用“是 / 否”，<b>EBS 来源字段（是否在途冲减、是否按MPQ）按 EBS 显示“Y / N”</b>。</div>
+        <div>⑩ 风险等级：来源类型=客户备料时，<b>不在发起人表单显示</b>——由“物料计划科”节点在独立节点页《风险核定页》中选定（低风险 / 中风险 / 高风险 三选一）。</div>
+        <div>⑪ 风险应对方案：来源类型=客户备料时，由“销售总监”节点在独立节点页《风险应对方案页》中填写多行文本；<b>风险等级为中风险或高风险时必填，低风险时选填</b>；并附选填的“风险应对方案附件”。风险等级在该页只读回显。</div>
+        <div>⑫ 明细行金额口径：明细行“未税单价”“币种”两列<b>保留字段但默认隐藏（不删除，便于后续启用）</b>，“备料金额”统一为“备料金额（RMB）”。</div>
+        <div>⑬ 备料范围：来源类型=客户备料时显示且必填；来源类型=供应链备料时隐藏。</div>
+        <div>⑭ 模板下载：点击“模板下载”导出 Excel，包含两个工作表——“BOM备料导入模板”“零散备料导入模板”，分别对应两套明细字段方案；模板中的必填与来源口径与明细行字段一致。</div>
       </div>
     </div>
 
     <!-- 审批轨迹（已由右侧移至底部 · 横向） -->
     <div class="card">
-      <div class="card-hd"><span class="bar"></span><h3>审批轨迹</h3><span class="hint">当前节点：部门主管</span></div>
+      <div class="card-hd"><span class="bar"></span><h3>审批轨迹</h3><span class="hint">当前节点：物料计划科选定风险等级（客户备料）</span></div>
       <div class="hflow">
         <div class="hstep done">
           <span class="arrow">▶</span>
           <div class="hd"><span class="dot">✓</span><span class="nm">张三（销售一部）</span></div>
-          <div class="ds">提交 · 2026-10-09 10:04<br>"备料需求已与客户确认，请审核。"</div>
+          <div class="ds">提交 · 2026-10-09 10:04<br>“备料需求已与客户确认，请审核。”</div>
         </div>
-        <div class="hstep doing">
+        <div class="hstep doing" id="nodeRiskLevel">
           <span class="arrow">▶</span>
-          <div class="hd"><span class="dot">2</span><span class="nm">部门主管</span><span class="badge">当前节点</span></div>
-          <div class="ds">待处理 · 超时提醒 24h</div>
+          <div class="hd"><span class="dot">2</span><span class="nm">物料计划科</span><span class="badge">当前节点</span></div>
+          <div class="ds">选定风险等级（低 / 中 / 高风险 三选一）</div>
+        </div>
+        <div class="hstep" id="nodeRiskPlan">
+          <span class="arrow">▶</span>
+          <div class="hd"><span class="dot">3</span><span class="nm">销售总监</span></div>
+          <div class="ds">填写风险应对方案（中/高风险必填）</div>
+        </div>
+        <div class="hstep" id="nodeSupervisor">
+          <span class="arrow">▶</span>
+          <div class="hd"><span class="dot">4</span><span class="nm">部门主管</span><span class="badge hidden" id="supBadge">当前节点</span></div>
+          <div class="ds">审批</div>
         </div>
         <div class="hstep">
           <span class="arrow">▶</span>
-          <div class="hd"><span class="dot">3</span><span class="nm">平台计划部门评审</span></div>
+          <div class="hd"><span class="dot">5</span><span class="nm">平台计划部门评审</span></div>
           <div class="ds">填写评审意见 / 备注 / 评审附件</div>
         </div>
         <div class="hstep last">
-          <div class="hd"><span class="dot">4</span><span class="nm">流程结束</span></div>
+          <div class="hd"><span class="dot">6</span><span class="nm">流程结束</span></div>
           <div class="ds">审核通过后同步EBS：直接请购自动下PR并反写PR编号</div>
         </div>
       </div>
@@ -399,7 +443,7 @@
 
 <!-- 底部操作栏 -->
 <div class="actionbar">
-  <span class="sum">流程标题：华南区域+133深圳坪山厂+XX电子科技有限公司+客户备料+零散备料 ｜ 明细 2 行 ｜ 合计 ¥1,271.00</span>
+  <span class="sum">流程主题：张三创建的客户策提流程 ｜ 明细 2 行 ｜ 合计 ¥1,271.00</span>
   <button class="btn primary">提 交</button>
   <button class="btn">暂 存</button>
   <button class="btn warn">退 回</button>
@@ -407,23 +451,115 @@
   <button class="btn">打 印</button>
 </div>
 
-<script>
-/* ===== 备料类型 / 需求类型 联动显隐 ===== */
-function syncFields(){
-  var el = document.querySelector('input[name=mattype]:checked');
-  var mat = el ? el.value : 'scatter';                    /* bom | scatter */
-  var dem = document.getElementById('demandType').value;  /* 直接请购 | 一般预测 | 滚动预测 */
-
-  /* ① 预测集：零散备料 + 滚动预测 才显示（且必选） */
-  document.getElementById('fldForecast').classList.toggle('hidden', !(mat === 'scatter' && dem === '滚动预测'));
-
-  /* ② PR编号：零散备料 + 直接请购 才显示（EBS 反写） */
-  document.getElementById('fldPR').classList.toggle('hidden', !(mat === 'scatter' && dem === '直接请购'));
-
-  /* ③ 是否在途冲减：仅 BOM备料 显示 */
-  document.getElementById('fldTransit').classList.toggle('hidden', mat !== 'bom');
+<script>/* 本地演示数据；不连接或模拟声称已连接真实 EBS。 */
+const rowTemplates={bom:document.querySelector('#tbodyBom tr').cloneNode(true),scatter:document.querySelector('#tbodyScatter tr').cloneNode(true)};
+function setRequired(field,on){
+  const label=field.querySelector(':scope > label');
+  let star=label.querySelector('.req-star');
+  if(on&&!star){star=document.createElement('span');star.className='req-star';star.textContent='*';label.prepend(star);}
+  if(!on&&star)star.remove();
+  field.querySelectorAll('input,select,textarea').forEach(c=>{c.required=on&&!c.readOnly;c.setAttribute('aria-required',String(on));});
 }
+function syncFields(){
+  const mat=document.querySelector('[name=mattype]:checked').value,dem=document.getElementById('demandType').value;
+  const customer=document.querySelector('[name=source]:checked').value==='客户备料';
+  document.querySelectorAll('[data-customer-required]').forEach(f=>setRequired(f,customer));
+  /* 【V0.9】是否已过TR5：仅备料类型=BOM备料时显示且必填，零散备料时隐藏 */
+  const bom=mat==='bom';
+  const fldTR5=document.getElementById('fldTR5');
+  fldTR5.classList.toggle('hidden',!bom);setRequired(fldTR5,bom);
+  /* 【V0.9】备料范围：仅来源类型=客户备料时显示且必填，供应链备料时隐藏 */
+  const fldScope=document.getElementById('fldScope');
+  fldScope.classList.toggle('hidden',!customer);setRequired(fldScope,customer);
+  const forecast=mat==='scatter'&&dem==='滚动预测';
+  document.getElementById('fldForecast').classList.toggle('hidden',!forecast);
+  setRequired(document.getElementById('fldForecast'),forecast);
+  document.getElementById('fldPR').classList.toggle('hidden',!(mat==='scatter'&&dem==='直接请购'));
+  /* 【V1.0】是否在途冲减：仅BOM备料显示且必填；取值来自EBS（Y/N），只读，不可人工填写或选择 */
+  const fldTransit=document.getElementById('fldTransit');
+  fldTransit.classList.toggle('hidden',!bom);setRequired(fldTransit,bom);
+  document.getElementById('viewBom').classList.toggle('hidden',mat!=='bom');
+  document.getElementById('viewScatter').classList.toggle('hidden',mat!=='scatter');
+  document.getElementById('viewName').textContent=mat==='bom'?'BOM备料':'零散备料';
+  const spot=document.getElementById('spotHeader');let star=spot.querySelector('.req-star');
+  if(dem==='直接请购'&&!star){star=document.createElement('span');star.className='req-star';star.textContent='*';spot.prepend(star);}
+  if(dem!=='直接请购'&&star)star.remove();
+  document.querySelectorAll('#tbodyScatter tr').forEach(tr=>{tr.cells[5].querySelector('select').required=dem==='直接请购';syncMpq(tr);});
+  document.querySelectorAll('#viewBom input,#viewBom select,#viewScatter input,#viewScatter select').forEach(c=>{c.disabled=c.closest('.tbl-wrap').classList.contains('hidden');});
+  syncFlowNodes();updateRowCnt();syncTitle();
+}
+function syncMpq(tr){
+  /* 【V1.0】是否按MPQ 取自EBS，显示 Y / N（只读）；仅 Y 时 MPQ 相关列取数，N 时置空 */
+  const cell=tr.cells[6].querySelector('input');
+  const yes=cell&&cell.value.trim().toUpperCase()==='Y';
+  [7,17,18,19].forEach(i=>{const c=tr.cells[i].querySelector('input');if(!c)return;if(!('exampleValue' in c.dataset))c.dataset.exampleValue=c.value==='—'?'':c.value;c.value=yes?c.dataset.exampleValue:'';});
+}
+/* 【V0.8】风险等级→风险应对方案必填联动已迁移至《风险应对方案页（销售总监节点）》独立节点表单，本页不再涉及。 */
+/* 来源类型→客户备料专属节点（物料计划科 / 销售总监）显示联动 */
+function syncFlowNodes(){
+  const cust=document.querySelector('[name=source]:checked').value==='客户备料';
+  document.getElementById('nodeRiskLevel').classList.toggle('hidden',!cust);
+  document.getElementById('nodeRiskPlan').classList.toggle('hidden',!cust);
+  const sup=document.getElementById('nodeSupervisor');
+  document.getElementById('supBadge').classList.toggle('hidden',cust);
+  document.getElementById('nodeRiskLevel').classList.toggle('doing',cust);
+  sup.classList.toggle('doing',!cust);
+  const steps=[...document.querySelectorAll('.hflow .hstep')].filter(s=>!s.classList.contains('hidden'));
+  steps.forEach((s,i)=>{const dot=s.querySelector('.dot');if(dot&&i>0)dot.textContent=i+1;});
+}
+function syncTitle(){
+  /* 【V1.0】流程主题：{申请人}创建的{策备类型}流程。策备类型随来源类型：客户备料→客户策提，供应链备料→供应链策提 */
+  const cust=document.querySelector('[name=source]:checked').value==='客户备料';
+  const subj=(cust?'客户策提':'供应链策提');
+  const text='张三创建的'+subj+'流程';
+  document.getElementById('flowTitle').value=text;
+  document.querySelector('.actionbar .sum').textContent='流程主题：'+text+' ｜ 明细 '+document.getElementById('rowCnt').textContent+' 行 ｜ 合计 ¥1,271.00';
+}
+function customerChanged(){
+  // Only the existing C0001 sample has a demonstrated mapping.
+  const matched=document.getElementById('customerName').value==='XX电子科技有限公司';
+  document.getElementById('customerCode').value=matched?'C0001':'';
+  document.getElementById('salesManager').value=matched?'张三':'';
+  document.getElementById('salesRegion').value=matched?'华南区域':'';
+  syncTitle();
+}
+['customerName','salesRegion','ouName'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{
+  if(id==='customerName')customerChanged();
+  if(id==='ouName')document.getElementById('ouCode').value=document.getElementById('ouName').value.match(/^\d+/)?.[0]||'';
+  syncTitle();
+}));
+const region=document.getElementById('salesRegion');const blank=document.createElement('option');blank.value='';blank.textContent='请选择销售区域';region.prepend(blank);
+function currentBody(){return document.getElementById(document.querySelector('[name=mattype]:checked').value==='bom'?'tbodyBom':'tbodyScatter');}
+function addRow(){
+  const mat=document.querySelector('[name=mattype]:checked').value,tb=currentBody(),tr=rowTemplates[mat].cloneNode(true);
+  tr.querySelectorAll('input,textarea,select').forEach(c=>{if(c.tagName==='SELECT')c.selectedIndex=0;else c.value='';delete c.dataset.exampleValue;});
+  tb.appendChild(tr);renumber(tb);syncFields();
+}
+function delRow(btn){const tb=btn.closest('tbody');btn.closest('tr').remove();renumber(tb);updateRowCnt();syncTitle();}
+function delLastRow(){const tb=currentBody();if(tb.lastElementChild)tb.lastElementChild.remove();renumber(tb);updateRowCnt();syncTitle();}
+function renumber(tb){tb.querySelectorAll('tr').forEach((tr,i)=>tr.cells[0].textContent=i+1);}
+function updateRowCnt(){document.getElementById('rowCnt').textContent=currentBody().rows.length;}
+function validatePrototype(){
+  const visible=c=>!c.closest('.hidden');
+  const invalid=[...document.querySelectorAll('[required]')].find(c=>visible(c)&&!c.disabled&&!c.checkValidity());
+  if(invalid){invalid.reportValidity();return;}
+  if(!currentBody().rows.length){alert('请至少添加一行拟备物料明细。');return;}
+  syncTitle();alert('本页必填校验通过。此为前端原型，未提交审批，也未同步 EBS。');
+}
+document.querySelector('.actionbar .primary').addEventListener('click',validatePrototype);
 syncFields();
+
+/* 【V1.0】模板下载：内嵌 Excel（两个工作表：BOM备料导入模板 / 零散备料导入模板），点击直接下载 */
+const TPL_B64="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";
+function downloadTemplate(){
+  const bin=atob(TPL_B64), n=bin.length, bytes=new Uint8Array(n);
+  for(let i=0;i<n;i++)bytes[i]=bin.charCodeAt(i);
+  const blob=new Blob([bytes],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);a.download="策略性备料明细导入模板.xlsx";
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+}
 </script>
 
 </body>
